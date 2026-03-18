@@ -1,0 +1,1015 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ARCHIVOS — Gestor Documental</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3e;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#43e97b;--text:#e8e8f0;--muted:#666680;--gold:#f59e0b;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+body::before{content:'';position:fixed;inset:0;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");pointer-events:none;z-index:0;opacity:.5;}
+header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-filter:blur(20px);border-bottom:1px solid var(--border);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:60px;}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:3px;background:linear-gradient(90deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.header-right{display:flex;align-items:center;gap:12px;}
+.config-btn{background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:7px 14px;border-radius:8px;font-size:13px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;}
+.config-btn:hover{border-color:var(--accent);color:var(--text);}
+.sync-dot{font-size:11px;color:var(--muted);font-family:'JetBrains Mono';}
+.app{display:flex;height:calc(100vh - 60px);position:relative;z-index:1;}
+.sidebar{width:220px;flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);padding:16px 12px;overflow-y:auto;display:flex;flex-direction:column;gap:4px;}
+.sb-title{font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);padding:0 8px;margin:10px 0 4px;}
+.sb-item{display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;cursor:pointer;transition:all .15s;font-size:12px;font-weight:500;color:var(--muted);border:1px solid transparent;}
+.sb-item:hover{background:var(--surface2);color:var(--text);}
+.sb-item.active{background:rgba(108,99,255,.12);border-color:rgba(108,99,255,.3);color:var(--accent);}
+.sb-item.bm-active{background:rgba(245,158,11,.1);border-color:rgba(245,158,11,.3);color:var(--gold);}
+.sb-item .cnt{margin-left:auto;font-family:'JetBrains Mono';font-size:10px;background:var(--surface2);padding:1px 5px;border-radius:3px;}
+.sb-div{height:1px;background:var(--border);margin:6px 0;}
+.main{flex:1;overflow-y:auto;padding:20px 24px;}
+.toolbar{display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap;}
+.search-box{flex:1;min-width:180px;display:flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:0 12px;height:38px;transition:border-color .2s;}
+.search-box:focus-within{border-color:var(--accent);}
+.search-box input{flex:1;background:none;border:none;outline:none;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;}
+.search-box input::placeholder{color:var(--muted);}
+.fpill{display:flex;align-items:center;gap:6px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:0 10px;height:38px;font-size:12px;color:var(--muted);}
+.fpill select{background:none;border:none;outline:none;color:var(--text);font-size:12px;font-family:'DM Sans',sans-serif;cursor:pointer;}
+.fpill select option{background:var(--surface2);}
+.view-toggle{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+.vbtn{padding:8px 11px;cursor:pointer;font-size:13px;color:var(--muted);transition:all .15s;background:none;border:none;}
+.vbtn.active{background:var(--accent);color:white;}
+.upload-btn{background:var(--accent);color:white;border:none;border-radius:10px;padding:0 16px;height:38px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;white-space:nowrap;}
+.upload-btn:hover{background:#5850e0;transform:translateY(-1px);box-shadow:0 4px 16px rgba(108,99,255,.3);}
+.stats-bar{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+.scard{flex:1;min-width:100px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px 18px;}
+.slabel{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.sval{font-family:'Bebas Neue';font-size:30px;letter-spacing:1px;}
+.sval.acc{color:var(--accent);}
+.files-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.fcard{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all .2s;position:relative;}
+.fcard:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:0 4px 24px rgba(108,99,255,.1);}
+.fcard.bookmarked{border-color:rgba(245,158,11,.4);}
+.fcard .thumb{height:130px;background:var(--surface2);display:flex;align-items:center;justify-content:center;position:relative;overflow:hidden;}
+.fcard .thumb img{width:100%;height:100%;object-fit:cover;}
+.fcard .thumb .ficon{font-size:44px;}
+.tbadge{position:absolute;top:7px;right:7px;font-family:'JetBrains Mono';font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px;text-transform:uppercase;}
+.bpdf{background:rgba(255,107,107,.2);color:#ff6b6b;border:1px solid rgba(255,107,107,.3);}
+.bimg{background:rgba(67,233,123,.15);color:#43e97b;border:1px solid rgba(67,233,123,.3);}
+.bm-star{position:absolute;top:7px;left:7px;font-size:14px;cursor:pointer;opacity:.5;transition:opacity .15s;z-index:2;background:none;border:none;padding:2px;}
+.bm-star:hover,.bm-star.on{opacity:1;}
+.fcard .finfo{padding:10px 12px;}
+.fname{font-size:11px;font-weight:600;margin-bottom:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.fmeta{display:flex;flex-wrap:wrap;gap:3px;}
+.tag{font-size:10px;padding:2px 6px;border-radius:4px;font-weight:500;background:rgba(108,99,255,.12);color:var(--accent);border:1px solid rgba(108,99,255,.2);}
+.tag.tcat{background:rgba(255,193,7,.1);color:#ffc107;border-color:rgba(255,193,7,.2);}
+.tag.ttipo{background:rgba(67,233,123,.1);color:#43e97b;border-color:rgba(67,233,123,.2);}
+.tag.tai{background:rgba(108,99,255,.18);color:#a78bfa;border-color:rgba(167,139,250,.3);}
+.fdate{font-size:10px;color:var(--muted);margin-top:5px;font-family:'JetBrains Mono';}
+.factions{display:flex;gap:5px;padding:0 12px 10px;}
+.abtn{flex:1;padding:5px;border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid var(--border);background:var(--surface2);color:var(--muted);transition:all .15s;font-family:'DM Sans',sans-serif;}
+.abtn:hover{border-color:var(--accent);color:var(--accent);}
+.abtn.danger:hover{border-color:var(--accent2);color:var(--accent2);}
+.files-list{display:flex;flex-direction:column;gap:5px;}
+.frow{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px 14px;display:flex;align-items:center;gap:12px;cursor:pointer;transition:all .15s;}
+.frow:hover{border-color:var(--accent);}
+.frow.bookmarked{border-color:rgba(245,158,11,.35);}
+.frow .ricon{font-size:22px;flex-shrink:0;}
+.frow .rinfo{flex:1;min-width:0;}
+.frow .rname{font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.frow .rtags{display:flex;gap:3px;margin-top:2px;flex-wrap:wrap;}
+.frow .rdate{font-size:10px;color:var(--muted);font-family:'JetBrains Mono';white-space:nowrap;}
+.frow .ract{display:flex;gap:5px;flex-shrink:0;}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:80px 20px;text-align:center;gap:14px;}
+.eicon{font-size:60px;opacity:.25;}
+.etitle{font-family:'Bebas Neue';font-size:26px;letter-spacing:2px;color:var(--muted);}
+.esub{font-size:13px;color:var(--muted);max-width:280px;line-height:1.6;}
+.modal-overlay{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,.72);backdrop-filter:blur(8px);display:none;align-items:center;justify-content:center;padding:16px;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:520px;max-height:90vh;overflow-y:auto;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:sup .22s ease;}
+@keyframes sup{from{opacity:0;transform:translateY(18px)}}
+.mhdr{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;}
+.mtitle{font-family:'Bebas Neue';font-size:22px;letter-spacing:2px;}
+.mclose{background:var(--surface2);border:1px solid var(--border);color:var(--muted);width:30px;height:30px;border-radius:7px;cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.mclose:hover{color:var(--text);border-color:var(--accent2);}
+.mbody{padding:0 20px 20px;display:flex;flex-direction:column;gap:14px;}
+.dropzone{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
+.dropzone:hover,.dropzone.dg{border-color:var(--accent);background:rgba(108,99,255,.05);}
+.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.dz-icon{font-size:36px;margin-bottom:8px;}
+.dz-text{font-size:13px;color:var(--muted);}
+.dz-text strong{color:var(--accent);}
+.dz-preview{margin-top:10px;padding:9px 12px;background:var(--surface2);border-radius:7px;display:none;align-items:center;gap:8px;}
+.dz-preview.show{display:flex;}
+.pvname{font-size:12px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.pvsize{font-size:10px;color:var(--muted);font-family:'JetBrains Mono';}
+.field{display:flex;flex-direction:column;gap:5px;}
+.field label{font-size:10px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;}
+.field input,.field select,.field textarea{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;color:var(--text);font-size:13px;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .2s;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--accent);}
+.field select option{background:var(--surface2);}
+.field textarea{resize:vertical;min-height:60px;}
+.frow2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.tags-input{display:flex;flex-wrap:wrap;gap:5px;align-items:center;background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:7px 10px;min-height:38px;cursor:text;}
+.tags-input input{background:none;border:none;outline:none;color:var(--text);font-size:13px;min-width:80px;font-family:'DM Sans',sans-serif;}
+.tchip{background:rgba(108,99,255,.15);color:var(--accent);border:1px solid rgba(108,99,255,.3);border-radius:4px;padding:2px 7px;font-size:10px;font-weight:600;display:flex;align-items:center;gap:3px;}
+.tchip button{background:none;border:none;color:inherit;cursor:pointer;font-size:11px;line-height:1;padding:0;}
+.btn-primary{background:var(--accent);color:white;border:none;border-radius:9px;padding:11px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;}
+.btn-primary:hover{background:#5850e0;transform:translateY(-1px);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-secondary{background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:9px;padding:11px 20px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .2s;width:100%;}
+.btn-secondary:hover{border-color:var(--accent);}
+/* IA Banner */
+.ai-banner{background:linear-gradient(135deg,rgba(108,99,255,.15),rgba(167,139,250,.1));border:1px solid rgba(108,99,255,.3);border-radius:10px;padding:12px 14px;display:flex;align-items:center;gap:10px;font-size:12px;}
+.ai-banner .ai-icon{font-size:20px;}
+.ai-banner strong{color:var(--accent);}
+.ai-result{background:var(--surface2);border:1px solid rgba(108,99,255,.25);border-radius:10px;padding:12px 14px;display:none;flex-direction:column;gap:8px;}
+.ai-result.show{display:flex;}
+.ai-result-title{font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;display:flex;align-items:center;gap:6px;}
+.ai-chips{display:flex;flex-wrap:wrap;gap:5px;}
+.ai-chip{padding:3px 9px;border-radius:20px;font-size:11px;font-weight:600;cursor:pointer;border:1px solid;transition:all .15s;}
+.ai-chip:hover{transform:translateY(-1px);}
+.ai-chip.cat{background:rgba(255,193,7,.12);color:#ffc107;border-color:rgba(255,193,7,.3);}
+.ai-chip.tag{background:rgba(108,99,255,.12);color:var(--accent);border-color:rgba(108,99,255,.25);}
+.ai-chip.pro{background:rgba(67,233,123,.1);color:#43e97b;border-color:rgba(67,233,123,.25);}
+.ai-chip.monto{background:rgba(251,146,60,.1);color:#fb923c;border-color:rgba(251,146,60,.25);}
+.ai-note{font-size:11px;color:var(--muted);line-height:1.5;font-style:italic;}
+.ai-apply-btn{background:rgba(108,99,255,.2);color:var(--accent);border:1px solid rgba(108,99,255,.35);border-radius:7px;padding:7px 14px;font-size:12px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;align-self:flex-start;}
+.ai-apply-btn:hover{background:rgba(108,99,255,.35);}
+/* Viewer */
+.viewer-modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:780px;max-height:90vh;overflow:hidden;display:flex;flex-direction:column;animation:sup .22s ease;}
+.vhdr{padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;}
+.vtitle{font-size:13px;font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.vbody{flex:1;overflow:auto;padding:16px;display:flex;align-items:flex-start;justify-content:center;}
+.vbody img{max-width:100%;border-radius:8px;}
+.vbody iframe{width:100%;height:58vh;border-radius:8px;border:none;}
+.vmeta{padding:14px 18px;border-top:1px solid var(--border);display:flex;flex-wrap:wrap;gap:6px;}
+/* Config */
+.config-modal{background:var(--surface);border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;box-shadow:0 24px 80px rgba(0,0,0,.6);animation:sup .22s ease;}
+.cnote{font-size:11px;color:var(--muted);line-height:1.6;margin-top:5px;}
+.cnote code{font-family:'JetBrains Mono';background:var(--surface2);padding:1px 4px;border-radius:3px;font-size:10px;}
+.cbox{background:var(--surface2);border-radius:8px;padding:12px;margin-bottom:14px;}
+/* Toast */
+.toast-container{position:fixed;bottom:20px;right:20px;z-index:999;display:flex;flex-direction:column;gap:6px;}
+.toast{background:var(--surface2);border:1px solid var(--border);border-radius:9px;padding:10px 14px;font-size:13px;min-width:220px;display:flex;align-items:center;gap:8px;animation:tin .18s ease;box-shadow:0 8px 24px rgba(0,0,0,.3);}
+.toast.success{border-color:rgba(67,233,123,.4);}
+.toast.error{border-color:rgba(255,107,107,.4);}
+.toast.info{border-color:rgba(108,99,255,.4);}
+@keyframes tin{from{opacity:0;transform:translateX(16px)}}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.2);border-top-color:white;border-radius:50%;animation:sp .6s linear infinite;display:inline-block;}
+@keyframes sp{to{transform:rotate(360deg)}}
+::-webkit-scrollbar{width:5px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px;}
+@media(max-width:600px){.sidebar{display:none;}.files-grid{grid-template-columns:1fr 1fr;}.frow2{grid-template-columns:1fr;}.stats-bar{gap:8px;}.scard{min-width:70px;padding:10px 12px;}.sval{font-size:22px;}}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ARCHIVOS</div>
+  <div class="header-right">
+    <span class="sync-dot" id="syncDot">⬤ Sin configurar</span>
+    <button class="config-btn" onclick="openConfig()">⚙ Configurar</button>
+  </div>
+</header>
+
+<div class="app">
+  <aside class="sidebar">
+    <div class="sb-title">Tipo</div>
+    <div class="sb-item active" id="sb_todos" onclick="setSbFilter('tipo','todos','sb_todos')">
+      <span>📁</span> Todos <span class="cnt" id="cntTodos">0</span>
+    </div>
+    <div class="sb-item" id="sb_pdf" onclick="setSbFilter('tipo','pdf','sb_pdf')">
+      <span>📄</span> PDFs <span class="cnt" id="cntPDF">0</span>
+    </div>
+    <div class="sb-item" id="sb_img" onclick="setSbFilter('tipo','imagen','sb_img')">
+      <span>🖼</span> Imágenes <span class="cnt" id="cntImg">0</span>
+    </div>
+    <div class="sb-div"></div>
+    <div class="sb-title">⭐ Guardados</div>
+    <div class="sb-item" id="sb_bm" onclick="setSbFilter('bookmark','si','sb_bm')">
+      <span>⭐</span> Favoritos <span class="cnt" id="cntBM">0</span>
+    </div>
+    <div class="sb-div"></div>
+    <div class="sb-title">Categorías</div>
+    <div id="sbCats"></div>
+    <div class="sb-div"></div>
+    <div class="sb-title">Estado</div>
+    <div class="sb-item" id="sb_est_todos" onclick="setSbFilter('estado','todos','sb_est_todos')">
+      <span>🔵</span> Todos
+    </div>
+    <div class="sb-item" id="sb_est_activo" onclick="setSbFilter('estado','activo','sb_est_activo')">
+      <span>🟢</span> Activo
+    </div>
+    <div class="sb-item" id="sb_est_arch" onclick="setSbFilter('estado','archivado','sb_est_arch')">
+      <span>🟡</span> Archivado
+    </div>
+  </aside>
+
+  <main class="main">
+    <div class="stats-bar">
+      <div class="scard"><div class="slabel">Total</div><div class="sval acc" id="stTotal">0</div></div>
+      <div class="scard"><div class="slabel">PDFs</div><div class="sval" id="stPDF">0</div></div>
+      <div class="scard"><div class="slabel">Imágenes</div><div class="sval" id="stImg">0</div></div>
+      <div class="scard"><div class="slabel">Categorías</div><div class="sval" id="stCats">0</div></div>
+    </div>
+
+    <div class="toolbar">
+      <div class="search-box">
+        <span style="color:var(--muted)">🔍</span>
+        <input type="text" id="searchInput" placeholder="Buscar nombre, categoría, etiqueta, proveedor..." oninput="renderFiles()">
+      </div>
+      <div class="fpill">
+        <span>🗂</span>
+        <select id="filterCat" onchange="renderFiles()"><option value="">Todas las categorías</option></select>
+      </div>
+      <div class="fpill">
+        <span>📅</span>
+        <select id="filterYear" onchange="renderFiles()"><option value="">Todos los años</option></select>
+      </div>
+      <div class="view-toggle">
+        <button class="vbtn active" id="vgrid" onclick="setView('grid')">⊞</button>
+        <button class="vbtn" id="vlist" onclick="setView('list')">☰</button>
+      </div>
+      <button class="upload-btn" onclick="openUpload()">+ Subir</button>
+    </div>
+
+    <div id="filesContainer"></div>
+  </main>
+</div>
+
+<!-- MODAL SUBIR -->
+<div class="modal-overlay" id="uploadModal">
+  <div class="modal">
+    <div class="mhdr">
+      <div class="mtitle">SUBIR ARCHIVO</div>
+      <button class="mclose" onclick="closeModal('uploadModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="dropzone" id="dropzone">
+        <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this.files[0])">
+        <div class="dz-icon">📎</div>
+        <div class="dz-text">Arrastrá aquí o <strong>hacé click</strong></div>
+        <div class="dz-text" style="font-size:11px;margin-top:3px;">PDF, JPG, PNG, WEBP</div>
+        <div class="dz-preview" id="dzPreview">
+          <span id="pvIcon">📄</span>
+          <span class="pvname" id="pvName"></span>
+          <span class="pvsize" id="pvSize"></span>
+          <button id="btnAnalizar" onclick="analizarConIA()" style="margin-left:auto;background:linear-gradient(135deg,#6c63ff,#a78bfa);color:white;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">✨ Analizar con IA</button>
+        </div>
+      </div>
+
+      <!-- Resultado IA -->
+      <div class="ai-result" id="aiResult">
+        <div class="ai-result-title">✨ Sugerencias de la IA <span id="aiSpinner" style="display:none"><span class="spinner" style="border-top-color:var(--accent);"></span></span></div>
+        <div id="aiChips" class="ai-chips"></div>
+        <div id="aiNoteText" class="ai-note"></div>
+        <button class="ai-apply-btn" onclick="aplicarSugerenciasIA()">✅ Aplicar todo</button>
+      </div>
+
+      <div class="field">
+        <label>Nombre</label>
+        <input type="text" id="fNombre" placeholder="Ej: Factura Enero 2026">
+      </div>
+      <div class="frow2">
+        <div class="field">
+          <label>Categoría</label>
+          <select id="fCategoria">
+            <option value="">Sin categoría</option>
+            <option>Facturas</option><option>Contratos</option><option>Recibos</option>
+            <option>Informes</option><option>Fotos</option><option>Legales</option>
+            <option>Comprobantes</option><option>Tickets</option><option>Otro</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Estado</label>
+          <select id="fEstado">
+            <option value="activo">Activo</option>
+            <option value="archivado">Archivado</option>
+          </select>
+        </div>
+      </div>
+      <div class="frow2">
+        <div class="field">
+          <label>Proveedor / Origen</label>
+          <input type="text" id="fProveedor" placeholder="Ej: GUAPITO">
+        </div>
+        <div class="field">
+          <label>Monto ($)</label>
+          <input type="number" id="fMonto" placeholder="0">
+        </div>
+      </div>
+      <div class="field">
+        <label>Etiquetas (Enter para agregar)</label>
+        <div class="tags-input" id="tagsBox" onclick="document.getElementById('tagIn').focus()">
+          <input type="text" id="tagIn" placeholder="Etiqueta..." onkeydown="handleTag(event)">
+        </div>
+      </div>
+      <div class="field">
+        <label>Notas</label>
+        <textarea id="fNotas" placeholder="Descripción u observaciones..."></textarea>
+      </div>
+      <button class="btn-primary" id="btnSubir" onclick="subirArchivo()">
+        <span id="btnTxt">Subir archivo</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL VIEWER -->
+<div class="modal-overlay" id="viewerModal">
+  <div class="viewer-modal">
+    <div class="vhdr">
+      <span id="vTypeIcon" style="font-size:18px"></span>
+      <span class="vtitle" id="vTitle"></span>
+      <button id="vBmBtn" onclick="toggleBookmarkViewer()" style="background:none;border:none;font-size:18px;cursor:pointer;padding:4px 8px;">⭐</button>
+      <a id="vLink" href="#" target="_blank" class="config-btn" style="text-decoration:none">↗ Abrir</a>
+      <button class="mclose" onclick="closeModal('viewerModal')">✕</button>
+    </div>
+    <div class="vbody" id="vBody"></div>
+    <div class="vmeta" id="vMeta"></div>
+  </div>
+</div>
+
+<!-- MODAL CONFIG -->
+<div class="modal-overlay" id="configModal">
+  <div class="config-modal">
+    <div class="mhdr">
+      <div class="mtitle">CONFIGURACIÓN</div>
+      <button class="mclose" onclick="closeModal('configModal')">✕</button>
+    </div>
+    <div class="mbody">
+      <div class="field">
+        <label>URL del Google Apps Script</label>
+        <input type="text" id="cfgUrl" placeholder="https://script.google.com/macros/s/.../exec">
+        <div class="cnote">El script debe implementar <code>doGet()</code> y <code>doPost()</code>.</div>
+      </div>
+      <div class="field">
+        <label>ID de carpeta Google Drive</label>
+        <input type="text" id="cfgFolder" placeholder="1a2b3c4d5e6f...">
+        <div class="cnote">Copiá el ID de la URL de tu carpeta Drive.</div>
+      </div>
+      <div class="field">
+        <label>API Key de Anthropic (para IA)</label>
+        <input type="password" id="cfgApiKey" placeholder="sk-ant-...">
+        <div class="cnote">Tu clave de Anthropic para clasificación automática con IA. Se guarda solo en tu navegador.</div>
+      </div>
+      <div class="cbox">
+        <div style="font-size:12px;font-weight:700;color:var(--text);margin-bottom:8px;">📋 Columnas de la Sheet</div>
+        <div class="cnote">
+          <code>ID | NOMBRE | TIPO | CATEGORIA | ESTADO | PROVEEDOR | MONTO | ETIQUETAS | NOTAS | FECHA | DRIVE_URL | DRIVE_ID</code>
+        </div>
+      </div>
+      <button class="btn-primary" onclick="saveConfig()" style="margin-bottom:8px;">Guardar</button>
+      <button class="btn-secondary" onclick="cargarSheet()">↺ Sincronizar ahora</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toasts"></div>
+
+<script>
+// ═══════════════════════════════════════
+//  ESTADO
+// ═══════════════════════════════════════
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzx-4GAKozoR2ZtpcbqjHGoUoY21Mf3fOZx5HlmRaOXjrTKm2PgzlGSVXnYN6yBUZG4/exec';
+let CFG = JSON.parse(localStorage.getItem('arch_cfg') || '{}');
+if (!CFG.scriptUrl) { CFG.scriptUrl = SCRIPT_URL; localStorage.setItem('arch_cfg', JSON.stringify(CFG)); }
+let archivos = JSON.parse(localStorage.getItem('arch_data') || '[]');
+let bookmarks = JSON.parse(localStorage.getItem('arch_bm') || '[]'); // array de IDs
+let tags = [];
+let curFile = null;
+let curBase64 = null;
+let viewMode = 'grid';
+let sbFilters = { tipo: 'todos', estado: 'todos', bookmark: 'todos' };
+let aiSugerencias = null;
+let viewerCurrentId = null;
+
+const CAT_COLORS = {
+  Facturas:'#ffc107',Contratos:'#6c63ff',Recibos:'#43e97b',
+  Informes:'#4ecdc4',Fotos:'#ff6b6b',Legales:'#a78bfa',
+  Comprobantes:'#fb923c',Tickets:'#38bdf8',Otro:'#94a3b8'
+};
+
+// ═══════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════
+document.addEventListener('DOMContentLoaded', () => {
+  updateDot();
+  if (CFG.scriptUrl) cargarSheet();
+  else renderFiles();
+
+  const dz = document.getElementById('dropzone');
+  ['dragover','dragenter'].forEach(ev => dz.addEventListener(ev, e => { e.preventDefault(); dz.classList.add('dg'); }));
+  ['dragleave','dragend'].forEach(ev => dz.addEventListener(ev, () => dz.classList.remove('dg')));
+  dz.addEventListener('drop', e => {
+    e.preventDefault(); dz.classList.remove('dg');
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+});
+
+// ═══════════════════════════════════════
+//  CONFIG
+// ═══════════════════════════════════════
+function openConfig() {
+  document.getElementById('cfgUrl').value = CFG.scriptUrl || '';
+  document.getElementById('cfgFolder').value = CFG.folderId || '';
+  document.getElementById('cfgApiKey').value = CFG.apiKey || '';
+  document.getElementById('configModal').classList.add('open');
+}
+function saveConfig() {
+  CFG.scriptUrl = document.getElementById('cfgUrl').value.trim();
+  CFG.folderId  = document.getElementById('cfgFolder').value.trim();
+  CFG.apiKey    = document.getElementById('cfgApiKey').value.trim();
+  localStorage.setItem('arch_cfg', JSON.stringify(CFG));
+  updateDot();
+  closeModal('configModal');
+  toast('✅ Configuración guardada', 'success');
+  if (CFG.scriptUrl) cargarSheet();
+}
+function updateDot() {
+  const el = document.getElementById('syncDot');
+  el.textContent = CFG.scriptUrl ? '⬤ Conectado' : '⬤ Sin configurar';
+  el.style.color = CFG.scriptUrl ? '#43e97b' : '#666680';
+}
+
+// ═══════════════════════════════════════
+//  SHEET
+// ═══════════════════════════════════════
+function gasGet(params) {
+  return new Promise((resolve, reject) => {
+    const cbName = '_gas_cb_' + Date.now();
+    params.callback = cbName;
+    params.t = Date.now();
+    const url = CFG.scriptUrl + '?' + new URLSearchParams(params).toString();
+    const script = document.createElement('script');
+    const timer = setTimeout(() => {
+      cleanup();
+      reject(new Error('Timeout — verificá el despliegue del script'));
+    }, 15000);
+    function cleanup() {
+      clearTimeout(timer);
+      delete window[cbName];
+      if (script.parentNode) script.parentNode.removeChild(script);
+    }
+    window[cbName] = function(data) { cleanup(); resolve(data); };
+    script.onerror = () => { cleanup(); reject(new Error('Error al cargar script — verificá la URL')); };
+    script.src = url;
+    document.head.appendChild(script);
+  });
+}
+
+// POST sin Content-Type para evitar preflight CORS (Apps Script acepta text/plain)
+async function gasPost(payload) {
+  const url = CFG.scriptUrl + '?t=' + Date.now();
+  const res = await fetch(url, {
+    method: 'POST',
+    body: JSON.stringify(payload)
+    // SIN Content-Type header → browser envía text/plain → sin preflight CORS
+  });
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+  const text = await res.text();
+  try { return JSON.parse(text); } catch { throw new Error('Respuesta no es JSON'); }
+}
+
+async function cargarSheet() {
+  if (!CFG.scriptUrl) return;
+  toast('↺ Cargando desde Sheet...', 'info');
+  try {
+    const data = await gasGet({ accion: 'listar' });
+    if (data.ok && Array.isArray(data.archivos)) {
+      archivos = data.archivos;
+      localStorage.setItem('arch_data', JSON.stringify(archivos));
+      renderFiles();
+      toast(`✅ ${archivos.length} archivos cargados`, 'success');
+    } else {
+      toast('❌ Script error: ' + (data.error || 'respuesta inesperada'), 'error');
+    }
+  } catch(e) {
+    toast('❌ ' + e.message, 'error');
+    console.error('cargarSheet error:', e);
+  }
+}
+
+// ═══════════════════════════════════════
+//  IA — CLASIFICACIÓN AUTOMÁTICA
+// ═══════════════════════════════════════
+async function analizarConIA() {
+  if (!curFile || !curBase64) { toast('Primero seleccioná un archivo', 'error'); return; }
+
+  const apiKey = CFG.apiKey;
+  if (!apiKey) {
+    toast('⚙ Configurá tu API Key de Anthropic primero', 'error');
+    openConfig();
+    return;
+  }
+
+  const btn = document.getElementById('btnAnalizar');
+  btn.disabled = true;
+  btn.textContent = '⏳ Analizando...';
+  document.getElementById('aiSpinner').style.display = '';
+  document.getElementById('aiResult').classList.add('show');
+  document.getElementById('aiChips').innerHTML = '<span style="color:var(--muted);font-size:11px;">Analizando el archivo...</span>';
+  document.getElementById('aiNoteText').textContent = '';
+
+  try {
+    const isPdf = curFile.type === 'application/pdf';
+    const b64data = curBase64.split(',')[1];
+
+    const messages = [
+      {
+        role: 'user',
+        content: [
+          {
+            type: isPdf ? 'document' : 'image',
+            source: {
+              type: 'base64',
+              media_type: curFile.type,
+              data: b64data
+            }
+          },
+          {
+            type: 'text',
+            text: `Analizá este archivo y respondé ÚNICAMENTE con un JSON válido, sin texto extra, sin markdown, sin backticks. El JSON debe tener exactamente estas claves:
+{
+  "categoria": "una de: Facturas, Contratos, Recibos, Informes, Fotos, Legales, Comprobantes, Tickets, Otro",
+  "etiquetas": ["máximo 4 etiquetas cortas y relevantes"],
+  "proveedor": "nombre del emisor/empresa/proveedor si se detecta, sino cadena vacía",
+  "monto": número o 0 si no hay monto,
+  "resumen": "una sola oración describiendo el documento (máximo 15 palabras)"
+}`
+          }
+        ]
+      }
+    ];
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 400,
+        messages
+      })
+    });
+
+    const data = await resp.json();
+    if (data.error) throw new Error(data.error.message || 'Error de API');
+
+    const raw = data.content?.[0]?.text || '';
+    let result;
+    try {
+      const clean = raw.replace(/```json|```/g, '').trim();
+      result = JSON.parse(clean);
+    } catch {
+      throw new Error('La IA no devolvió JSON válido');
+    }
+
+    aiSugerencias = result;
+    renderAIResult(result);
+    toast('✨ IA clasificó el archivo', 'success');
+
+  } catch(e) {
+    toast('❌ IA: ' + e.message, 'error');
+    document.getElementById('aiResult').classList.remove('show');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✨ Analizar con IA';
+    document.getElementById('aiSpinner').style.display = 'none';
+  }
+}
+
+function renderAIResult(r) {
+  const chips = document.getElementById('aiChips');
+  let html = '';
+  if (r.categoria) html += `<span class="ai-chip cat" onclick="aplicarCampo('categoria','${esc(r.categoria)}')" title="Click para aplicar">🗂 ${esc(r.categoria)}</span>`;
+  if (r.proveedor) html += `<span class="ai-chip pro" onclick="aplicarCampo('proveedor','${esc(r.proveedor)}')" title="Click para aplicar">🏢 ${esc(r.proveedor)}</span>`;
+  if (r.monto)     html += `<span class="ai-chip monto" onclick="aplicarCampo('monto','${r.monto}')" title="Click para aplicar">💰 $${fmtN(r.monto)}</span>`;
+  (r.etiquetas||[]).forEach(t => {
+    html += `<span class="ai-chip tag" onclick="aplicarTag('${esc(t)}')" title="Click para agregar"># ${esc(t)}</span>`;
+  });
+  chips.innerHTML = html || '<span style="color:var(--muted);font-size:11px;">Sin sugerencias</span>';
+  document.getElementById('aiNoteText').textContent = r.resumen || '';
+}
+
+function aplicarCampo(campo, valor) {
+  if (campo === 'categoria') {
+    const sel = document.getElementById('fCategoria');
+    // Agregar opción si no existe
+    let found = false;
+    for (let o of sel.options) { if (o.value === valor) { found = true; break; } }
+    if (!found) { const op = new Option(valor, valor); sel.add(op); }
+    sel.value = valor;
+    toast(`✅ Categoría: ${valor}`, 'success');
+  } else if (campo === 'proveedor') {
+    document.getElementById('fProveedor').value = valor;
+    toast(`✅ Proveedor: ${valor}`, 'success');
+  } else if (campo === 'monto') {
+    document.getElementById('fMonto').value = valor;
+    toast(`✅ Monto: $${valor}`, 'success');
+  }
+}
+
+function aplicarTag(t) {
+  if (!tags.includes(t)) { tags.push(t); renderTagsUI(); toast(`✅ Etiqueta: ${t}`, 'success'); }
+}
+
+function aplicarSugerenciasIA() {
+  if (!aiSugerencias) return;
+  const r = aiSugerencias;
+  if (r.categoria) aplicarCampo('categoria', r.categoria);
+  if (r.proveedor) aplicarCampo('proveedor', r.proveedor);
+  if (r.monto)     aplicarCampo('monto', String(r.monto));
+  (r.etiquetas||[]).forEach(t => aplicarTag(t));
+  if (r.resumen && !document.getElementById('fNotas').value)
+    document.getElementById('fNotas').value = r.resumen;
+  toast('✨ Sugerencias aplicadas', 'success');
+}
+
+// ═══════════════════════════════════════
+//  BOOKMARKS
+// ═══════════════════════════════════════
+function toggleBookmark(id, e) {
+  if (e) e.stopPropagation();
+  if (bookmarks.includes(id)) {
+    bookmarks = bookmarks.filter(x => x !== id);
+    toast('⭐ Quitado de favoritos', 'info');
+  } else {
+    bookmarks.push(id);
+    toast('⭐ Guardado en favoritos', 'success');
+  }
+  localStorage.setItem('arch_bm', JSON.stringify(bookmarks));
+  renderFiles();
+  if (viewerCurrentId === id) updateViewerBmBtn(id);
+}
+
+function toggleBookmarkViewer() {
+  if (viewerCurrentId) toggleBookmark(viewerCurrentId, null);
+}
+
+function updateViewerBmBtn(id) {
+  const btn = document.getElementById('vBmBtn');
+  btn.textContent = bookmarks.includes(id) ? '⭐' : '☆';
+  btn.style.opacity = bookmarks.includes(id) ? '1' : '0.5';
+}
+
+// ═══════════════════════════════════════
+//  SUBIR
+// ═══════════════════════════════════════
+function handleFile(file) {
+  if (!file) return;
+  curFile = file;
+  const isPdf = file.type === 'application/pdf';
+  document.getElementById('pvIcon').textContent = isPdf ? '📄' : '🖼';
+  document.getElementById('pvName').textContent = file.name;
+  document.getElementById('pvSize').textContent = fmtBytes(file.size);
+  document.getElementById('dzPreview').classList.add('show');
+  if (!document.getElementById('fNombre').value)
+    document.getElementById('fNombre').value = file.name.replace(/\.[^.]+$/, '');
+  // Pre-cargar base64 para IA
+  toB64(file).then(b64 => { curBase64 = b64; });
+  // Ocultar resultado IA anterior
+  document.getElementById('aiResult').classList.remove('show');
+  aiSugerencias = null;
+}
+
+function fmtBytes(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b/1024).toFixed(1) + ' KB';
+  return (b/1048576).toFixed(1) + ' MB';
+}
+
+async function subirArchivo() {
+  if (!curFile) { toast('Seleccioná un archivo primero', 'error'); return; }
+  const nombre    = document.getElementById('fNombre').value.trim() || curFile.name;
+  const categoria = document.getElementById('fCategoria').value;
+  const estado    = document.getElementById('fEstado').value;
+  const proveedor = document.getElementById('fProveedor').value.trim();
+  const monto     = document.getElementById('fMonto').value;
+  const notas     = document.getElementById('fNotas').value.trim();
+  const etiquetas = tags.join(',');
+  const tipo      = curFile.type === 'application/pdf' ? 'pdf' : 'imagen';
+
+  const btn = document.getElementById('btnSubir');
+  const txt = document.getElementById('btnTxt');
+  btn.disabled = true;
+  txt.innerHTML = '<span class="spinner"></span> Subiendo...';
+
+  try {
+    const base64 = curBase64 || await toB64(curFile);
+    const id = Date.now().toString();
+    const fecha = new Date().toLocaleDateString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric'})
+      + ' ' + new Date().toLocaleTimeString('es-AR',{hour:'2-digit',minute:'2-digit'});
+
+    let driveUrl = '', driveId = '';
+
+    if (CFG.scriptUrl) {
+      const payload = {
+        accion: 'subir',
+        id, nombre, tipo, categoria, estado,
+        proveedor, monto: monto||0, etiquetas, notas, fecha,
+        folderId: CFG.folderId || '',
+        fileName: curFile.name,
+        mimeType: curFile.type,
+        base64Data: base64.split(',')[1]
+      };
+      try {
+        const data = await gasPost(payload);
+        if (data.ok) { driveUrl = data.driveUrl || ''; driveId = data.driveId || ''; }
+        else toast('⚠ Script error: ' + (data.error||''), 'error');
+      } catch(fetchErr) {
+        toast('⚠ No se pudo guardar en Drive: ' + fetchErr.message, 'error');
+      }
+    }
+
+    const archivo = {
+      id, nombre, tipo, categoria, estado, proveedor,
+      monto: parseFloat(monto)||0, etiquetas, notas, fecha,
+      driveUrl, driveId,
+      localData: base64
+    };
+    archivos.unshift(archivo);
+    localStorage.setItem('arch_data', JSON.stringify(archivos));
+    renderFiles();
+    closeModal('uploadModal');
+    resetForm();
+    toast('✅ Archivo guardado', 'success');
+  } catch(e) {
+    toast('❌ ' + e.message, 'error');
+  } finally {
+    btn.disabled = false;
+    txt.textContent = 'Subir archivo';
+  }
+}
+
+function toB64(file) {
+  return new Promise((res,rej) => {
+    const r = new FileReader();
+    r.onload = () => res(r.result);
+    r.onerror = rej;
+    r.readAsDataURL(file);
+  });
+}
+
+// ═══════════════════════════════════════
+//  TAGS
+// ═══════════════════════════════════════
+function handleTag(e) {
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault();
+    const v = e.target.value.trim().replace(',','');
+    if (v && !tags.includes(v)) { tags.push(v); renderTagsUI(); }
+    e.target.value = '';
+  }
+}
+function removeTag(t) { tags = tags.filter(x=>x!==t); renderTagsUI(); }
+function renderTagsUI() {
+  const box = document.getElementById('tagsBox');
+  const inp = document.getElementById('tagIn');
+  box.innerHTML = '';
+  tags.forEach(t => {
+    const c = document.createElement('div');
+    c.className = 'tchip';
+    c.innerHTML = `${esc(t)} <button onclick="removeTag('${esc(t)}')">✕</button>`;
+    box.appendChild(c);
+  });
+  box.appendChild(inp);
+}
+
+// ═══════════════════════════════════════
+//  FILTROS
+// ═══════════════════════════════════════
+function setSbFilter(key, val, id) {
+  // Resetear otros filtros del mismo grupo si se cambia
+  if (key === 'bookmark') {
+    sbFilters = { tipo: 'todos', estado: 'todos', bookmark: val };
+  } else if (key === 'tipo') {
+    sbFilters = { tipo: val, estado: 'todos', bookmark: 'todos' };
+  } else if (key === 'estado') {
+    sbFilters = { tipo: 'todos', estado: val, bookmark: 'todos' };
+  } else if (key === 'cat') {
+    document.getElementById('filterCat').value = val;
+    sbFilters = { tipo: 'todos', estado: 'todos', bookmark: 'todos' };
+  }
+  document.querySelectorAll('.sb-item').forEach(i => i.classList.remove('active','bm-active'));
+  if (id) {
+    const el = document.getElementById(id);
+    if (el) el.classList.add(key === 'bookmark' ? 'bm-active' : 'active');
+  }
+  renderFiles();
+}
+
+function setView(v) {
+  viewMode = v;
+  document.getElementById('vgrid').classList.toggle('active', v==='grid');
+  document.getElementById('vlist').classList.toggle('active', v==='list');
+  renderFiles();
+}
+
+function getFiltered() {
+  const q   = document.getElementById('searchInput').value.toLowerCase();
+  const cat = document.getElementById('filterCat').value;
+  const yr  = document.getElementById('filterYear').value;
+  return archivos.filter(a => {
+    if (a.estado === 'eliminado') return false;
+    if (sbFilters.tipo !== 'todos' && a.tipo !== sbFilters.tipo) return false;
+    if (sbFilters.estado !== 'todos' && a.estado !== sbFilters.estado) return false;
+    if (sbFilters.bookmark === 'si' && !bookmarks.includes(a.id)) return false;
+    if (cat && a.categoria !== cat) return false;
+    if (yr && !(a.fecha||'').includes(yr)) return false;
+    if (q) {
+      const hay = [a.nombre,a.categoria,a.proveedor,a.etiquetas,a.notas].join(' ').toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+}
+
+// ═══════════════════════════════════════
+//  RENDER
+// ═══════════════════════════════════════
+function renderFiles() {
+  const lista = getFiltered();
+  const cont  = document.getElementById('filesContainer');
+  const act   = archivos.filter(a => a.estado !== 'eliminado');
+  const cats  = [...new Set(act.map(a=>a.categoria).filter(Boolean))];
+  const bmCount = act.filter(a => bookmarks.includes(a.id)).length;
+
+  // Stats
+  document.getElementById('stTotal').textContent = act.length;
+  document.getElementById('stPDF').textContent   = act.filter(a=>a.tipo==='pdf').length;
+  document.getElementById('stImg').textContent   = act.filter(a=>a.tipo==='imagen').length;
+  document.getElementById('stCats').textContent  = cats.length;
+  document.getElementById('cntTodos').textContent = act.length;
+  document.getElementById('cntPDF').textContent   = act.filter(a=>a.tipo==='pdf').length;
+  document.getElementById('cntImg').textContent   = act.filter(a=>a.tipo==='imagen').length;
+  document.getElementById('cntBM').textContent    = bmCount;
+
+  // Sidebar cats
+  document.getElementById('sbCats').innerHTML = cats.map(c => {
+    const col = CAT_COLORS[c]||'#6c63ff';
+    return `<div class="sb-item" onclick="setSbFilter('cat','${c}',null)">
+      <span style="width:7px;height:7px;border-radius:50%;background:${col};display:inline-block;flex-shrink:0;"></span>
+      ${esc(c)} <span class="cnt">${act.filter(a=>a.categoria===c).length}</span>
+    </div>`;
+  }).join('');
+
+  // Dropdowns
+  const fc = document.getElementById('filterCat');
+  const pv = fc.value;
+  fc.innerHTML = '<option value="">Todas las categorías</option>' + cats.map(c=>`<option value="${esc(c)}" ${c===pv?'selected':''}>${esc(c)}</option>`).join('');
+
+  const fy = document.getElementById('filterYear');
+  const py = fy.value;
+  const years = [...new Set(archivos.map(a=>(a.fecha||'').match(/\d{4}/)?.[0]).filter(Boolean))].sort().reverse();
+  fy.innerHTML = '<option value="">Todos los años</option>' + years.map(y=>`<option value="${y}" ${y===py?'selected':''}>${y}</option>`).join('');
+
+  if (!lista.length) {
+    const esBM = sbFilters.bookmark === 'si';
+    cont.innerHTML = `<div class="empty"><div class="eicon">${esBM?'⭐':'🗂'}</div><div class="etitle">${esBM?'Sin favoritos':'Sin archivos'}</div><div class="esub">${esBM?'Marcá archivos con ⭐ para guardarlos aquí':'Subí un archivo con <strong>+ Subir</strong> o ajustá los filtros'}</div></div>`;
+    return;
+  }
+  cont.innerHTML = viewMode === 'grid'
+    ? `<div class="files-grid">${lista.map(cardHTML).join('')}</div>`
+    : `<div class="files-list">${lista.map(rowHTML).join('')}</div>`;
+}
+
+function cardHTML(a) {
+  const col = CAT_COLORS[a.categoria]||'#6c63ff';
+  const isImg = a.tipo === 'imagen';
+  const src = a.localData || a.driveUrl || '';
+  const isBM = bookmarks.includes(a.id);
+  const thumb = (isImg && src)
+    ? `<img src="${src}" loading="lazy">`
+    : `<span class="ficon">${a.tipo==='pdf'?'📄':'🖼'}</span>`;
+  return `<div class="fcard${isBM?' bookmarked':''}" onclick="verArchivo('${a.id}')">
+    <div class="thumb">
+      ${thumb}
+      <span class="tbadge ${a.tipo==='pdf'?'bpdf':'bimg'}">${a.tipo}</span>
+      <button class="bm-star${isBM?' on':''}" onclick="toggleBookmark('${a.id}',event)" title="${isBM?'Quitar de favoritos':'Guardar en favoritos'}">${isBM?'⭐':'☆'}</button>
+    </div>
+    <div class="finfo">
+      <div class="fname">${esc(a.nombre)}</div>
+      <div class="fmeta">
+        ${a.categoria?`<span class="tag tcat" style="background:${col}18;color:${col};border-color:${col}30;">${esc(a.categoria)}</span>`:''}
+        ${(a.etiquetas||'').split(',').filter(Boolean).slice(0,2).map(t=>`<span class="tag">${esc(t.trim())}</span>`).join('')}
+      </div>
+      ${a.proveedor?`<div class="fdate">${esc(a.proveedor)}${a.monto?' · $'+fmtN(a.monto):''}</div>`:''}
+      <div class="fdate">${a.fecha||''}</div>
+    </div>
+    <div class="factions">
+      <button class="abtn" onclick="event.stopPropagation();verArchivo('${a.id}')">👁 Ver</button>
+      <button class="abtn danger" onclick="event.stopPropagation();eliminar('${a.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+function rowHTML(a) {
+  const col = CAT_COLORS[a.categoria]||'#6c63ff';
+  const isBM = bookmarks.includes(a.id);
+  return `<div class="frow${isBM?' bookmarked':''}" onclick="verArchivo('${a.id}')">
+    <span class="ricon">${a.tipo==='pdf'?'📄':'🖼'}</span>
+    <div class="rinfo">
+      <div class="rname">${esc(a.nombre)}</div>
+      <div class="rtags">
+        ${a.categoria?`<span class="tag tcat" style="background:${col}18;color:${col};border-color:${col}30;">${esc(a.categoria)}</span>`:''}
+        ${(a.etiquetas||'').split(',').filter(Boolean).slice(0,3).map(t=>`<span class="tag">${esc(t.trim())}</span>`).join('')}
+        ${a.proveedor?`<span class="tag ttipo">${esc(a.proveedor)}</span>`:''}
+        ${a.estado!=='activo'?`<span class="tag" style="background:#f59e0b18;color:#f59e0b;border-color:#f59e0b30;">${a.estado}</span>`:''}
+      </div>
+    </div>
+    <div class="rdate">${a.fecha||''}</div>
+    <div class="ract">
+      <button class="abtn" onclick="event.stopPropagation();toggleBookmark('${a.id}',event)">${isBM?'⭐':'☆'}</button>
+      <button class="abtn" onclick="event.stopPropagation();verArchivo('${a.id}')">👁 Ver</button>
+      <button class="abtn danger" onclick="event.stopPropagation();eliminar('${a.id}')">🗑</button>
+    </div>
+  </div>`;
+}
+
+// ═══════════════════════════════════════
+//  VER ARCHIVO
+// ═══════════════════════════════════════
+function verArchivo(id) {
+  const a = archivos.find(x=>x.id===id); if (!a) return;
+  viewerCurrentId = id;
+  document.getElementById('vTypeIcon').textContent = a.tipo==='pdf'?'📄':'🖼';
+  document.getElementById('vTitle').textContent = a.nombre;
+  const src = a.localData || a.driveUrl || '';
+  const lnk = document.getElementById('vLink');
+  lnk.href = a.driveUrl || src || '#';
+  lnk.style.display = (a.driveUrl || src) ? '' : 'none';
+  updateViewerBmBtn(id);
+  const body = document.getElementById('vBody');
+  if (a.tipo === 'imagen' && src)
+    body.innerHTML = `<img src="${src}" alt="${esc(a.nombre)}">`;
+  else if (a.tipo === 'pdf' && src)
+    body.innerHTML = `<iframe src="${src}"></iframe>`;
+  else
+    body.innerHTML = '<p style="color:var(--muted);padding:40px;text-align:center;">Sin previsualización disponible.<br>Abrí el enlace de Drive.</p>';
+  const col = CAT_COLORS[a.categoria]||'#6c63ff';
+  document.getElementById('vMeta').innerHTML = [
+    a.categoria && `<span class="tag tcat" style="background:${col}18;color:${col};border-color:${col}30;">${esc(a.categoria)}</span>`,
+    a.estado!=='activo' && `<span class="tag" style="background:#f59e0b18;color:#f59e0b;border-color:#f59e0b30;">${a.estado}</span>`,
+    a.proveedor && `<span class="tag ttipo">${esc(a.proveedor)}</span>`,
+    a.monto && `<span class="tag" style="background:#43e97b18;color:#43e97b;border-color:#43e97b30;">$${fmtN(a.monto)}</span>`,
+    ...(a.etiquetas||'').split(',').filter(Boolean).map(t=>`<span class="tag">${esc(t.trim())}</span>`),
+    a.fecha && `<span style="font-size:11px;color:var(--muted);font-family:'JetBrains Mono';">${a.fecha}</span>`,
+    a.notas && `<span style="font-size:12px;color:var(--muted);flex-basis:100%;">${esc(a.notas)}</span>`
+  ].filter(Boolean).join('');
+  document.getElementById('viewerModal').classList.add('open');
+}
+
+// ═══════════════════════════════════════
+//  ELIMINAR
+// ═══════════════════════════════════════
+async function eliminar(id) {
+  if (!confirm('¿Eliminar este archivo?')) return;
+  const a = archivos.find(x=>x.id===id); if (!a) return;
+  a.estado = 'eliminado';
+  bookmarks = bookmarks.filter(x => x !== id);
+  localStorage.setItem('arch_bm', JSON.stringify(bookmarks));
+  if (CFG.scriptUrl) {
+    try { await gasGet({ accion: 'eliminar', id, driveId: a.driveId||'' }); }
+    catch(e) {}
+  }
+  localStorage.setItem('arch_data', JSON.stringify(archivos));
+  renderFiles();
+  toast('🗑 Eliminado', 'success');
+}
+
+// ═══════════════════════════════════════
+//  HELPERS
+// ═══════════════════════════════════════
+function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function fmtN(n) { return Number(n).toLocaleString('es-AR'); }
+function openUpload() { document.getElementById('uploadModal').classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+function resetForm() {
+  curFile = null; curBase64 = null; tags = []; aiSugerencias = null;
+  ['fNombre','fProveedor','fMonto','fNotas'].forEach(i => document.getElementById(i).value = '');
+  document.getElementById('fCategoria').value = '';
+  document.getElementById('fEstado').value = 'activo';
+  document.getElementById('dzPreview').classList.remove('show');
+  document.getElementById('fileInput').value = '';
+  document.getElementById('aiResult').classList.remove('show');
+  renderTagsUI();
+}
+document.querySelectorAll('.modal-overlay').forEach(m => {
+  m.addEventListener('click', e => { if (e.target===m) m.classList.remove('open'); });
+});
+function toast(msg, type='info') {
+  const c = document.getElementById('toasts');
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => el.remove(), 3500);
+}
+</script>
+</body>
+</html>
