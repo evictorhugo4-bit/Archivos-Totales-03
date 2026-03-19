@@ -290,12 +290,20 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-
       </div>
       <div class="frow2">
         <div class="field">
-          <label>Proveedor / Origen</label>
-          <input type="text" id="fProveedor" placeholder="Ej: GUAPITO">
+          <label>Emisor / Proveedor</label>
+          <input type="text" id="fProveedor" placeholder="Ej: OSDE, Fiat, Dr. García">
         </div>
         <div class="field">
           <label>Monto ($)</label>
           <input type="number" id="fMonto" placeholder="0">
+        </div>
+      </div>
+      <div class="frow2">
+        <div class="field">
+          <label>Fecha del documento</label>
+          <input type="text" id="fFechaDoc" placeholder="DD/MM/YYYY">
+        </div>
+        <div class="field" style="justify-content:flex-end;">
         </div>
       </div>
       <div class="field">
@@ -513,12 +521,30 @@ async function analizarConIA() {
   document.getElementById('aiNoteText').textContent = '';
 
   try {
-    const b64data = curBase64.split(',')[1];
     const isPdf = curFile.type === 'application/pdf';
-    const mimeType = isPdf ? 'image/jpeg' : (curFile.type || 'image/jpeg');
-    const imageUrl = `data:${mimeType};base64,${b64data}`;
 
-    const prompt = `Analizá este archivo y respondé ÚNICAMENTE con un JSON válido, sin texto extra, sin markdown, sin backticks. El JSON debe tener exactamente estas claves: {"categoria":"una de: Facturas, Contratos, Recibos, Informes, Fotos, Legales, Comprobantes, Tickets, Médico, Otro","etiquetas":["máximo 4 etiquetas cortas y relevantes"],"proveedor":"nombre del emisor/empresa/institución si se detecta, sino cadena vacía","monto":0,"resumen":"una sola oración describiendo el documento (máximo 15 palabras)"}`;
+    // Comprimir imagen si es muy grande (>2MB)
+    let finalBase64 = curBase64;
+    if (!isPdf && curFile.size > 2 * 1024 * 1024) {
+      finalBase64 = await new Promise(resolve => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement('canvas');
+          const scale = Math.min(1, Math.sqrt((2 * 1024 * 1024) / curFile.size));
+          canvas.width = img.width * scale;
+          canvas.height = img.height * scale;
+          canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas.toDataURL('image/jpeg', 0.85));
+        };
+        img.src = curBase64;
+      });
+    }
+
+    const b64data = finalBase64.split(',')[1];
+    const mimeType = isPdf ? 'image/jpeg' : 'image/jpeg';
+    const imageUrl = `data:image/jpeg;base64,${b64data}`;
+
+    const prompt = `Analizá este documento con MUCHO detalle. Respondé ÚNICAMENTE con un JSON válido, sin texto extra, sin markdown, sin backticks. Buscá especialmente: el nombre de la empresa o persona que EMITE/FIRMA el documento (puede estar en el encabezado, membrete, pie de página, sello, firma), la fecha que figura en el documento, y el monto total si lo hay. JSON con estas claves exactas: {"categoria":"una de: Facturas, Contratos, Recibos, Informes, Fotos, Legales, Comprobantes, Tickets, Médico, Otro","etiquetas":["máximo 4 etiquetas cortas y relevantes"],"emisor":"nombre COMPLETO de quien emite (empresa/institución/médico/persona). Buscá en membrete, encabezado, firma, sello. NUNCA dejes vacío si hay algún nombre visible","proveedor":"igual que emisor","fecha_doc":"fecha del documento en formato DD/MM/YYYY. Buscá fecha de emisión, expedición o emisión. NUNCA dejes vacío si hay una fecha visible","monto":0,"resumen":"una sola oración describiendo el documento (máximo 15 palabras)"}`;
 
     const userContent = isPdf
       ? `${prompt}\n\nNombre del archivo: ${curFile.name}`
@@ -541,7 +567,10 @@ async function analizarConIA() {
     });
 
     const data = await resp.json();
-    if (resp.status === 429) throw new Error('Límite de requests alcanzado. Esperá unos segundos e intentá de nuevo.');
+    if (!resp.ok) {
+      const msg = data.error?.message || data.error || JSON.stringify(data);
+      throw new Error(`Groq ${resp.status}: ${msg}`);
+    }
     if (data.error) throw new Error(data.error.message || 'Error de API Groq');
 
     const raw = data.choices?.[0]?.message?.content || '';
@@ -553,6 +582,7 @@ async function analizarConIA() {
       throw new Error('Groq no devolvió JSON válido: ' + raw.substring(0, 100));
     }
 
+    console.log('Groq resultado:', JSON.stringify(result, null, 2));
     aiSugerencias = result;
     renderAIResult(result);
     toast('✨ Groq clasificó el archivo', 'success');
@@ -570,9 +600,11 @@ async function analizarConIA() {
 function renderAIResult(r) {
   const chips = document.getElementById('aiChips');
   let html = '';
-  if (r.categoria) html += `<span class="ai-chip cat" onclick="aplicarCampo('categoria','${esc(r.categoria)}')" title="Click para aplicar">🗂 ${esc(r.categoria)}</span>`;
-  if (r.proveedor) html += `<span class="ai-chip pro" onclick="aplicarCampo('proveedor','${esc(r.proveedor)}')" title="Click para aplicar">🏢 ${esc(r.proveedor)}</span>`;
-  if (r.monto)     html += `<span class="ai-chip monto" onclick="aplicarCampo('monto','${r.monto}')" title="Click para aplicar">💰 $${fmtN(r.monto)}</span>`;
+  if (r.categoria)  html += `<span class="ai-chip cat"   onclick="aplicarCampo('categoria','${esc(r.categoria)}')"  title="Click para aplicar">🗂 ${esc(r.categoria)}</span>`;
+  const emisor = r.emisor || r.proveedor;
+  if (emisor)       html += `<span class="ai-chip pro"   onclick="aplicarCampo('proveedor','${esc(emisor)}')"        title="Click para aplicar">🏢 ${esc(emisor)}</span>`;
+  if (r.fecha_doc)  html += `<span class="ai-chip tag"   onclick="aplicarCampo('fecha_doc','${esc(r.fecha_doc)}')"  title="Click para aplicar">📅 ${esc(r.fecha_doc)}</span>`;
+  if (r.monto)      html += `<span class="ai-chip monto" onclick="aplicarCampo('monto','${r.monto}')"               title="Click para aplicar">💰 $${fmtN(r.monto)}</span>`;
   (r.etiquetas||[]).forEach(t => {
     html += `<span class="ai-chip tag" onclick="aplicarTag('${esc(t)}')" title="Click para agregar"># ${esc(t)}</span>`;
   });
@@ -592,6 +624,9 @@ function aplicarCampo(campo, valor) {
   } else if (campo === 'proveedor') {
     document.getElementById('fProveedor').value = valor;
     toast(`✅ Proveedor: ${valor}`, 'success');
+  } else if (campo === 'fecha_doc') {
+    document.getElementById('fFechaDoc').value = valor;
+    toast(`✅ Fecha: ${valor}`, 'success');
   } else if (campo === 'monto') {
     document.getElementById('fMonto').value = valor;
     toast(`✅ Monto: $${valor}`, 'success');
@@ -605,9 +640,11 @@ function aplicarTag(t) {
 function aplicarSugerenciasIA() {
   if (!aiSugerencias) return;
   const r = aiSugerencias;
-  if (r.categoria) aplicarCampo('categoria', r.categoria);
-  if (r.proveedor) aplicarCampo('proveedor', r.proveedor);
-  if (r.monto)     aplicarCampo('monto', String(r.monto));
+  if (r.categoria)  aplicarCampo('categoria', r.categoria);
+  const emisor = r.emisor || r.proveedor;
+  if (emisor)       aplicarCampo('proveedor', emisor);
+  if (r.fecha_doc)  aplicarCampo('fecha_doc', r.fecha_doc);
+  if (r.monto)      aplicarCampo('monto', String(r.monto));
   (r.etiquetas||[]).forEach(t => aplicarTag(t));
   if (r.resumen && !document.getElementById('fNotas').value)
     document.getElementById('fNotas').value = r.resumen;
@@ -673,7 +710,8 @@ async function subirArchivo() {
   const nombre    = document.getElementById('fNombre').value.trim() || curFile.name;
   const categoria = document.getElementById('fCategoria').value;
   const estado    = document.getElementById('fEstado').value;
-  const proveedor = document.getElementById('fProveedor').value.trim();
+  const proveedor  = document.getElementById('fProveedor').value.trim();
+  const fechaDoc   = document.getElementById('fFechaDoc').value.trim();
   const monto     = document.getElementById('fMonto').value;
   const notas     = document.getElementById('fNotas').value.trim();
   const etiquetas = tags.join(',');
@@ -696,7 +734,7 @@ async function subirArchivo() {
       const payload = {
         accion: 'subir',
         id, nombre, tipo, categoria, estado,
-        proveedor, monto: monto||0, etiquetas, notas, fecha,
+        proveedor, monto: monto||0, etiquetas, notas, fecha, fechaDoc,
         folderId: CFG.folderId || '',
         fileName: curFile.name,
         mimeType: curFile.type,
@@ -713,7 +751,7 @@ async function subirArchivo() {
 
     const archivo = {
       id, nombre, tipo, categoria, estado, proveedor,
-      monto: parseFloat(monto)||0, etiquetas, notas, fecha,
+      monto: parseFloat(monto)||0, etiquetas, notas, fecha, fechaDoc,
       driveUrl, driveId,
       localData: base64
     };
@@ -976,7 +1014,7 @@ function openUpload() { document.getElementById('uploadModal').classList.add('op
 function closeModal(id) { document.getElementById(id).classList.remove('open'); }
 function resetForm() {
   curFile = null; curBase64 = null; tags = []; aiSugerencias = null;
-  ['fNombre','fProveedor','fMonto','fNotas'].forEach(i => document.getElementById(i).value = '');
+  ['fNombre','fProveedor','fMonto','fNotas','fFechaDoc'].forEach(i => document.getElementById(i).value = '');
   document.getElementById('fCategoria').value = '';
   document.getElementById('fEstado').value = 'activo';
   document.getElementById('dzPreview').classList.remove('show');
