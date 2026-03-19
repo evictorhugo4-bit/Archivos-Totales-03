@@ -4,6 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ARCHIVOS — Gestor Documental</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>pdfjsLib.GlobalWorkerOptions.workerSrc="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";</script>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0a0a0f;--surface:#12121a;--surface2:#1a1a26;--border:#2a2a3e;--accent:#6c63ff;--accent2:#ff6b6b;--accent3:#43e97b;--text:#e8e8f0;--muted:#666680;--gold:#f59e0b;}
@@ -523,9 +525,26 @@ async function analizarConIA() {
   try {
     const isPdf = curFile.type === 'application/pdf';
 
-    // Comprimir imagen si es muy grande (>2MB)
+    // Convertir PDF página 1 a imagen, o comprimir imagen grande
     let finalBase64 = curBase64;
-    if (!isPdf && curFile.size > 2 * 1024 * 1024) {
+    if (isPdf) {
+      document.getElementById('aiChips').innerHTML = '<span style="color:var(--muted);font-size:11px;">Convirtiendo PDF a imagen...</span>';
+      finalBase64 = await new Promise(async (resolve, reject) => {
+        try {
+          const pdfData = atob(curBase64.split(',')[1]);
+          const arr = new Uint8Array(pdfData.length);
+          for (let i = 0; i < pdfData.length; i++) arr[i] = pdfData.charCodeAt(i);
+          const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
+          const page = await pdf.getPage(1);
+          const viewport = page.getViewport({ scale: 2.0 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          resolve(canvas.toDataURL('image/jpeg', 0.92));
+        } catch(e) { reject(e); }
+      });
+    } else if (curFile.size > 2 * 1024 * 1024) {
       finalBase64 = await new Promise(resolve => {
         const img = new Image();
         img.onload = () => {
@@ -541,17 +560,15 @@ async function analizarConIA() {
     }
 
     const b64data = finalBase64.split(',')[1];
-    const mimeType = isPdf ? 'image/jpeg' : 'image/jpeg';
     const imageUrl = `data:image/jpeg;base64,${b64data}`;
 
     const prompt = `Analizá este documento con MUCHO detalle. Respondé ÚNICAMENTE con un JSON válido, sin texto extra, sin markdown, sin backticks. Buscá especialmente: el nombre de la empresa o persona que EMITE/FIRMA el documento (puede estar en el encabezado, membrete, pie de página, sello, firma), la fecha que figura en el documento, y el monto total si lo hay. JSON con estas claves exactas: {"categoria":"una de: Facturas, Contratos, Recibos, Informes, Fotos, Legales, Comprobantes, Tickets, Médico, Otro","etiquetas":["máximo 4 etiquetas cortas y relevantes"],"emisor":"nombre COMPLETO de quien emite (empresa/institución/médico/persona). Buscá en membrete, encabezado, firma, sello. NUNCA dejes vacío si hay algún nombre visible","proveedor":"igual que emisor","fecha_doc":"fecha del documento en formato DD/MM/YYYY. Buscá fecha de emisión, expedición o emisión. NUNCA dejes vacío si hay una fecha visible","monto":0,"resumen":"una sola oración describiendo el documento (máximo 15 palabras)"}`;
 
-    const userContent = isPdf
-      ? `${prompt}\n\nNombre del archivo: ${curFile.name}`
-      : [
-          { type: 'image_url', image_url: { url: imageUrl } },
-          { type: 'text', text: prompt }
-        ];
+    // Siempre enviamos imagen (PDF fue convertido arriba)
+    const userContent = [
+      { type: 'image_url', image_url: { url: imageUrl } },
+      { type: 'text', text: prompt }
+    ];
 
     const body = {
       model: 'meta-llama/llama-4-scout-17b-16e-instruct',
