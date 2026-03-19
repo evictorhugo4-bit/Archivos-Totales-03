@@ -624,8 +624,15 @@ function renderAIResult(r) {
     span.className = `ai-chip ${cls}`;
     span.title = 'Click para aplicar · Doble click para editar';
     span.innerHTML = `${icon} <span class="chip-val">${esc(valor)}</span>`;
-    span.onclick = () => esTag ? aplicarTag(span.querySelector('.chip-val').textContent)
-                               : aplicarCampo(campo, span.querySelector('.chip-val').textContent);
+    let clickTimer = null;
+    span.onclick = (e) => {
+      if (clickTimer) { clearTimeout(clickTimer); clickTimer = null; return; }
+      clickTimer = setTimeout(() => {
+        clickTimer = null;
+        esTag ? aplicarTag(span.querySelector('.chip-val').textContent)
+              : aplicarCampo(campo, span.querySelector('.chip-val').textContent);
+      }, 220);
+    };
     span.ondblclick = (e) => {
       e.stopPropagation();
       const valEl = span.querySelector('.chip-val');
