@@ -489,7 +489,7 @@ async function cargarSheet() {
     const data = await gasGet({ accion: 'listar' });
     if (data.ok && Array.isArray(data.archivos)) {
       archivos = data.archivos;
-      localStorage.setItem('arch_data', JSON.stringify(archivos));
+      guardarArchivos();
       renderFiles();
       toast(`✅ ${archivos.length} archivos cargados`, 'success');
     } else {
@@ -504,8 +504,11 @@ async function cargarSheet() {
 // ═══════════════════════════════════════
 //  IA — CLASIFICACIÓN AUTOMÁTICA
 // ═══════════════════════════════════════
+let _iaRunning = false;
 async function analizarConIA() {
-  if (!curFile || !curBase64) { toast('Primero seleccioná un archivo', 'error'); return; }
+  if (_iaRunning) return;
+  _iaRunning = true;
+  if (!curFile || !curBase64) { _iaRunning = false; toast('Primero seleccioná un archivo', 'error'); return; }
 
   const apiKey = CFG.apiKey;
   if (!apiKey) {
@@ -608,6 +611,7 @@ async function analizarConIA() {
     toast('❌ IA: ' + e.message, 'error');
     document.getElementById('aiResult').classList.remove('show');
   } finally {
+    _iaRunning = false;
     btn.disabled = false;
     btn.textContent = '✨ Analizar con IA';
     document.getElementById('aiSpinner').style.display = 'none';
@@ -821,7 +825,7 @@ async function subirArchivo() {
       localData: base64
     };
     archivos.unshift(archivo);
-    localStorage.setItem('arch_data', JSON.stringify(archivos));
+    guardarArchivos();
     renderFiles();
     closeModal('uploadModal');
     resetForm();
@@ -1065,7 +1069,7 @@ async function eliminar(id) {
     try { await gasGet({ accion: 'eliminar', id, driveId: a.driveId||'' }); }
     catch(e) {}
   }
-  localStorage.setItem('arch_data', JSON.stringify(archivos));
+  guardarArchivos();
   renderFiles();
   toast('🗑 Eliminado', 'success');
 }
@@ -1073,6 +1077,23 @@ async function eliminar(id) {
 // ═══════════════════════════════════════
 //  HELPERS
 // ═══════════════════════════════════════
+function guardarArchivos() {
+  try {
+    // No guardar localData (base64) en localStorage — ocupa demasiado espacio
+    const limp = archivos.map(a => {
+      const { localData, ...resto } = a;
+      return resto;
+    });
+    localStorage.setItem('arch_data', JSON.stringify(limp));
+  } catch(e) {
+    console.warn('localStorage lleno, limpiando archivos viejos...', e);
+    // Intentar limpiar eliminados y reintentar
+    const activos = archivos.filter(a => a.estado !== 'eliminado').map(({ localData, ...r }) => r);
+    try { localStorage.setItem('arch_data', JSON.stringify(activos)); }
+    catch(e2) { toast('⚠ Sin espacio local. Los datos solo están en Drive.', 'error'); }
+  }
+}
+
 function esc(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 function fmtN(n) { return Number(n).toLocaleString('es-AR'); }
 function openUpload() { document.getElementById('uploadModal').classList.add('open'); }
