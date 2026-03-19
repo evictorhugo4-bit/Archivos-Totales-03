@@ -535,12 +535,21 @@ async function analizarConIA() {
       generationConfig: { temperature: 0, maxOutputTokens: 500 }
     };
 
-    const resp = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
-      { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
-    );
-
-    const data = await resp.json();
+    const models = ['gemini-2.0-flash', 'gemini-2.0-flash-lite'];
+    let resp, data;
+    for (let i = 0; i < models.length; i++) {
+      if (i > 0) {
+        document.getElementById('aiChips').innerHTML = '<span style="color:var(--muted);font-size:11px;">Límite alcanzado, reintentando con modelo alternativo...</span>';
+        await new Promise(r => setTimeout(r, 2000));
+      }
+      resp = await fetch(
+        `https://generativelanguage.googleapis.com/v1beta/models/${models[i]}:generateContent?key=${apiKey}`,
+        { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }
+      );
+      data = await resp.json();
+      if (resp.status !== 429) break;
+    }
+    if (resp.status === 429) throw new Error('Límite de requests alcanzado. Esperá unos segundos e intentá de nuevo.');
     if (data.error) throw new Error(data.error.message || 'Error de API Gemini');
 
     const raw = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
