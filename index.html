@@ -536,7 +536,7 @@ async function analizarConIA() {
           for (let i = 0; i < pdfData.length; i++) arr[i] = pdfData.charCodeAt(i);
           const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
           const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 2.0 });
+          const viewport = page.getViewport({ scale: 3.5 });
           const canvas = document.createElement('canvas');
           canvas.width = viewport.width;
           canvas.height = viewport.height;
