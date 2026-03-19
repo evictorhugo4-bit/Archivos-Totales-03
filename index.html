@@ -616,16 +616,54 @@ async function analizarConIA() {
 
 function renderAIResult(r) {
   const chips = document.getElementById('aiChips');
-  let html = '';
-  if (r.categoria)  html += `<span class="ai-chip cat"   onclick="aplicarCampo('categoria','${esc(r.categoria)}')"  title="Click para aplicar">🗂 ${esc(r.categoria)}</span>`;
+  chips.innerHTML = '';
+
+  // Chip editable genérico
+  function makeChip(cls, icon, valor, campo, esTag) {
+    const span = document.createElement('span');
+    span.className = `ai-chip ${cls}`;
+    span.title = 'Click para aplicar · Doble click para editar';
+    span.innerHTML = `${icon} <span class="chip-val">${esc(valor)}</span>`;
+    span.onclick = () => esTag ? aplicarTag(span.querySelector('.chip-val').textContent)
+                               : aplicarCampo(campo, span.querySelector('.chip-val').textContent);
+    span.ondblclick = (e) => {
+      e.stopPropagation();
+      const valEl = span.querySelector('.chip-val');
+      const input = document.createElement('input');
+      input.value = valEl.textContent;
+      input.style.cssText = 'background:none;border:none;outline:none;color:inherit;font:inherit;width:'+(valEl.offsetWidth+40)+'px;max-width:180px;';
+      valEl.replaceWith(input);
+      input.focus();
+      input.select();
+      const confirm = () => {
+        const newVal = input.value.trim() || valEl.textContent;
+        const newSpan = document.createElement('span');
+        newSpan.className = 'chip-val';
+        newSpan.textContent = newVal;
+        input.replaceWith(newSpan);
+        // Actualizar en aiSugerencias
+        if (aiSugerencias) {
+          if (campo === 'proveedor') aiSugerencias.emisor = aiSugerencias.proveedor = newVal;
+          else if (campo === 'fecha_doc') aiSugerencias.fecha_doc = newVal;
+          else if (campo === 'categoria') aiSugerencias.categoria = newVal;
+          else if (campo === 'monto') aiSugerencias.monto = newVal;
+        }
+        toast(`✏️ Editado: ${newVal}`, 'info');
+      };
+      input.onblur = confirm;
+      input.onkeydown = e => { if(e.key==='Enter') { e.preventDefault(); confirm(); } if(e.key==='Escape') { input.value = valEl.textContent; confirm(); } };
+    };
+    chips.appendChild(span);
+  }
+
+  if (r.categoria) makeChip('cat', '🗂', r.categoria, 'categoria', false);
   const emisor = r.emisor || r.proveedor;
-  if (emisor)       html += `<span class="ai-chip pro"   onclick="aplicarCampo('proveedor','${esc(emisor)}')"        title="Click para aplicar">🏢 ${esc(emisor)}</span>`;
-  if (r.fecha_doc)  html += `<span class="ai-chip tag"   onclick="aplicarCampo('fecha_doc','${esc(r.fecha_doc)}')"  title="Click para aplicar">📅 ${esc(r.fecha_doc)}</span>`;
-  if (r.monto)      html += `<span class="ai-chip monto" onclick="aplicarCampo('monto','${r.monto}')"               title="Click para aplicar">💰 $${fmtN(r.monto)}</span>`;
-  (r.etiquetas||[]).forEach(t => {
-    html += `<span class="ai-chip tag" onclick="aplicarTag('${esc(t)}')" title="Click para agregar"># ${esc(t)}</span>`;
-  });
-  chips.innerHTML = html || '<span style="color:var(--muted);font-size:11px;">Sin sugerencias</span>';
+  if (emisor)      makeChip('pro', '🏢', emisor, 'proveedor', false);
+  if (r.fecha_doc) makeChip('tag', '📅', r.fecha_doc, 'fecha_doc', false);
+  if (r.monto)     makeChip('monto', '💰 $', fmtN(r.monto), 'monto', false);
+  (r.etiquetas||[]).forEach(t => makeChip('tag', '#', t, 'etiqueta', true));
+
+  if (!chips.children.length) chips.innerHTML = '<span style="color:var(--muted);font-size:11px;">Sin sugerencias</span>';
   document.getElementById('aiNoteText').textContent = r.resumen || '';
 }
 
