@@ -536,7 +536,7 @@ async function analizarConIA() {
           for (let i = 0; i < pdfData.length; i++) arr[i] = pdfData.charCodeAt(i);
           const pdf = await pdfjsLib.getDocument({ data: arr }).promise;
           const page = await pdf.getPage(1);
-          const viewport = page.getViewport({ scale: 3.5 });
+          const viewport = page.getViewport({ scale: 1.5 });
           const canvas = document.createElement('canvas');
           canvas.width = viewport.width;
           canvas.height = viewport.height;
@@ -663,12 +663,15 @@ function renderAIResult(r) {
     chips.appendChild(span);
   }
 
-  if (r.categoria) makeChip('cat', '🗂', r.categoria, 'categoria', false);
+  const invalidos = ['', 'no disponible', 'n/a', 'desconocido', 'sin datos', 'null', 'undefined'];
+  const valido = v => v && !invalidos.includes(String(v).toLowerCase().trim());
+
+  if (valido(r.categoria)) makeChip('cat',   '🗂',    r.categoria,      'categoria', false);
   const emisor = r.emisor || r.proveedor;
-  if (emisor)      makeChip('pro', '🏢', emisor, 'proveedor', false);
-  if (r.fecha_doc) makeChip('tag', '📅', r.fecha_doc, 'fecha_doc', false);
-  if (r.monto)     makeChip('monto', '💰 $', fmtN(r.monto), 'monto', false);
-  (r.etiquetas||[]).forEach(t => makeChip('tag', '#', t, 'etiqueta', true));
+  if (valido(emisor))       makeChip('pro',   '🏢',    emisor,           'proveedor', false);
+  if (valido(r.fecha_doc))  makeChip('tag',   '📅',    r.fecha_doc,      'fecha_doc', false);
+  if (valido(r.monto) && Number(r.monto) > 0) makeChip('monto', '💰 $', fmtN(r.monto), 'monto', false);
+  (r.etiquetas||[]).filter(valido).forEach(t => makeChip('tag', '#', t, 'etiqueta', true));
 
   if (!chips.children.length) chips.innerHTML = '<span style="color:var(--muted);font-size:11px;">Sin sugerencias</span>';
   document.getElementById('aiNoteText').textContent = r.resumen || '';
