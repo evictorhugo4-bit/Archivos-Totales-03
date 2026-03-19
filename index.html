@@ -253,7 +253,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-
           <span id="pvIcon">📄</span>
           <span class="pvname" id="pvName"></span>
           <span class="pvsize" id="pvSize"></span>
-          <button id="btnAnalizar" onclick="analizarConIA()" style="margin-left:auto;background:linear-gradient(135deg,#6c63ff,#a78bfa);color:white;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">✨ Analizar con IA</button>
+          <button id="btnAnalizar" onclick="event.stopPropagation();analizarConIA()" style="margin-left:auto;background:linear-gradient(135deg,#6c63ff,#a78bfa);color:white;border:none;border-radius:6px;padding:5px 12px;font-size:11px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;white-space:nowrap;">✨ Analizar con IA</button>
         </div>
       </div>
 
