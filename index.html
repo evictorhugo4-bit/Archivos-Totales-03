@@ -93,7 +93,8 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-
 .mbody{padding:0 20px 20px;display:flex;flex-direction:column;gap:14px;}
 .dropzone{border:2px dashed var(--border);border-radius:12px;padding:28px;text-align:center;cursor:pointer;transition:all .2s;position:relative;}
 .dropzone:hover,.dropzone.dg{border-color:var(--accent);background:rgba(108,99,255,.05);}
-.dropzone input{position:absolute;inset:0;opacity:0;cursor:pointer;}
+.dropzone input{position:absolute;top:0;left:0;right:0;bottom:0;opacity:0;cursor:pointer;pointer-events:none;}
+.dropzone.no-file input{pointer-events:all;}
 .dz-icon{font-size:36px;margin-bottom:8px;}
 .dz-text{font-size:13px;color:var(--muted);}
 .dz-text strong{color:var(--accent);}
@@ -244,7 +245,7 @@ header{position:sticky;top:0;z-index:100;background:rgba(10,10,15,.88);backdrop-
       <button class="mclose" onclick="closeModal('uploadModal')">✕</button>
     </div>
     <div class="mbody">
-      <div class="dropzone" id="dropzone">
+      <div class="dropzone no-file" id="dropzone">
         <input type="file" id="fileInput" accept="image/*,.pdf" onchange="handleFile(this.files[0])">
         <div class="dz-icon">📎</div>
         <div class="dz-text">Arrastrá aquí o <strong>hacé click</strong></div>
@@ -650,6 +651,7 @@ function handleFile(file) {
   document.getElementById('pvName').textContent = file.name;
   document.getElementById('pvSize').textContent = fmtBytes(file.size);
   document.getElementById('dzPreview').classList.add('show');
+  document.getElementById('dropzone').classList.remove('no-file');
   if (!document.getElementById('fNombre').value)
     document.getElementById('fNombre').value = file.name.replace(/\.[^.]+$/, '');
   // Pre-cargar base64 para IA
@@ -977,6 +979,7 @@ function resetForm() {
   document.getElementById('fCategoria').value = '';
   document.getElementById('fEstado').value = 'activo';
   document.getElementById('dzPreview').classList.remove('show');
+  document.getElementById('dropzone').classList.add('no-file');
   document.getElementById('fileInput').value = '';
   document.getElementById('aiResult').classList.remove('show');
   renderTagsUI();
